@@ -19,7 +19,7 @@ jobs:
       
       - name: Build, test and package project
         working-directory: ./SpringBootAPI
-        run: mvn package -D SkipTests
+        run: mvn package -DskipTests
 
       - name: Docker login
         run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
