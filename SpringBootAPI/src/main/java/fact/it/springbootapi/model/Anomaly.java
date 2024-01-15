@@ -17,7 +17,7 @@ import java.util.Date;
 public class Anomaly {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
     private Date timestamp;
     private String longitude;
     private String latitude;

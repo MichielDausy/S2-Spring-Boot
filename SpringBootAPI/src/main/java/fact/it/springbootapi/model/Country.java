@@ -17,7 +17,7 @@ import java.util.List;
 public class Country {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
     private String name;
     @OneToMany(mappedBy = "country")
     private List<Anomaly> anomalies;

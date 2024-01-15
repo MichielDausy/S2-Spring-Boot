@@ -17,7 +17,7 @@ import java.util.List;
 public class AnomalyType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
     private String name;
     @OneToMany(mappedBy = "anomalyType")
     private List<Anomaly> anomalies;

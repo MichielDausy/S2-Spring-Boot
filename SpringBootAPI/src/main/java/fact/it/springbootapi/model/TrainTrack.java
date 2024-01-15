@@ -17,7 +17,7 @@ import java.util.List;
 public class TrainTrack {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
     private String name;
     @OneToMany(mappedBy = "trainTrack")
     private List<Anomaly> anomalies;
