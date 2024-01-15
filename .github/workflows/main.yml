@@ -28,4 +28,4 @@ jobs:
         run: docker build -t ${{ secrets.DOCKER_USER }}/coditrackapi:latest ./SpringBootAPI
 
       - name: Upload container to Docker Hub with Push
-        run: docker push ${{ secrets.DOCKER_USER }}/CodiTrackAPI:latest
+        run: docker push ${{ secrets.DOCKER_USER }}/coditrackapi:latest
