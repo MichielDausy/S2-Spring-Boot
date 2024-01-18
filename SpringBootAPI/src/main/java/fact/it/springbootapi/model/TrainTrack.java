@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.locationtech.jts.geom.LineString;
 
 import java.util.List;
 
@@ -19,6 +20,8 @@ public class TrainTrack {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String name;
+    @Column(columnDefinition = "geometry(LineString,4326)")
+    private LineString trackGeometry;
     @OneToMany(mappedBy = "trainTrack")
     private List<Anomaly> anomalies;
 }

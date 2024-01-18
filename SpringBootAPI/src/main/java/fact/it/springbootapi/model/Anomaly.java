@@ -6,7 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "anomaly")
@@ -18,25 +19,25 @@ public class Anomaly {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    private Date timestamp;
+    private OffsetDateTime timestamp;
     private String longitude;
     private String latitude;
     private String photo;
     private boolean isFixed;
     private boolean isFalse;
     @ManyToOne
-    @JoinColumn(name="train_id")
+    @JoinColumn(name="trainId")
     private Train train;
     @ManyToOne
-    @JoinColumn(name="type_id")
+    @JoinColumn(name="typeId")
     private AnomalyType anomalyType;
     @ManyToOne
-    @JoinColumn(name="sign_id")
+    @JoinColumn(name="signId")
     private Sign sign;
     @ManyToOne
-    @JoinColumn(name="country_id")
+    @JoinColumn(name="countryId")
     private Country country;
     @ManyToOne
-    @JoinColumn(name="train_track_id")
+    @JoinColumn(name="trainTrackId")
     private TrainTrack trainTrack;
 }
