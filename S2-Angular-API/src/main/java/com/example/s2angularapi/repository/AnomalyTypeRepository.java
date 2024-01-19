@@ -1,6 +1,6 @@
-package fact.it.springbootapi.repository;
+package com.example.s2angularapi.repository;
 
-import fact.it.springbootapi.model.AnomalyType;
+import com.example.s2angularapi.model.AnomalyType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -14,13 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/anomalies")
@@ -36,17 +31,18 @@ public class AnomalyController {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         try {
-            String fileName = fileSystemStorageService.store(file);
-            response = anomalyService.addAnomaly(objectMapper.readValue(jsonObject, AnomalyRequest.class), fileName);
+            AnomalyRequest data = objectMapper.readValue(jsonObject, AnomalyRequest.class);
+            String fileName = fileSystemStorageService.store(file, data.getTimestamp().toString());
+            response = anomalyService.addAnomaly(data, fileName);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
         return response;
     }
 
-    @GetMapping("/all")
+    @GetMapping("all")
     @ResponseStatus(HttpStatus.OK)
-    public List<AnomalyResponse> getAllAnomalies(){
+    public List<AnomalyResponse> getAnomalies() {
         return anomalyService.getAllAnomalies();
     }
 

@@ -37,9 +37,9 @@ public class FileSystemStorageService implements StorageService {
     }
 
     @Override
-    public String store(MultipartFile file) {
+    public String store(MultipartFile file, String timestamp) {
         // Normalize file name
-        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+        String fileName =  timestamp + StringUtils.cleanPath(file.getOriginalFilename());
         try {
             // Check if the file's name contains valid  characters or not
             if (fileName.contains("..")) {
@@ -48,10 +48,11 @@ public class FileSystemStorageService implements StorageService {
             if (file.isEmpty()) {
                 throw new StorageException("Failed to store empty file.");
             }
+            fileName = fileName.replace(':', '.');
 
             // Copy file to the target place (Replacing existing file with the same name)
             Path targetLocation = this.rootLocation.resolve(
-                            Paths.get(file.getOriginalFilename()))
+                            Paths.get(fileName))
                     .normalize().toAbsolutePath();
 
             if (!targetLocation.getParent().equals(this.rootLocation.toAbsolutePath())) {
