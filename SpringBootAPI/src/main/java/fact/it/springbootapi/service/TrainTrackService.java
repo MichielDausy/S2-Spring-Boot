@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class TrainTrackService {
     private final TrainTrackRepository trainTrackRepository;
     public String findTrackById(Long trackId) {
-        String hexGeometry = trainTrackRepository.findTrackGeometryAsText(trackId);
-        return hexGeometry;
+        return trainTrackRepository.findTrackGeometryAsText(trackId);
     }
 }

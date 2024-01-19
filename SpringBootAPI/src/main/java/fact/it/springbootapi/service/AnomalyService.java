@@ -27,7 +27,7 @@ public class AnomalyService {
     private final TrainTrackRepository trainTrackRepository;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); //4326 is used for longitude and latitude coordinate systems
 
-    private Map<LineString, Point> createRandomLineStringWithPoint(GeometryFactory geometryFactory) {
+    private Map<LineString, Point> createRandomLineStringWithPoint() {
         int numPoints = 50;
         Coordinate[] coordinates = new Coordinate[numPoints];
 
@@ -134,7 +134,7 @@ public class AnomalyService {
                 TrainTrack trainTrack = new TrainTrack();
                 trainTrack.setName("Track_" + i);
 
-                Map<LineString, Point> lineStringWithPointMap = createRandomLineStringWithPoint(geometryFactory);
+                Map<LineString, Point> lineStringWithPointMap = createRandomLineStringWithPoint();
 
                 // Iterate over the map entries
                 for (Map.Entry<LineString, Point> entry : lineStringWithPointMap.entrySet()) {
@@ -160,7 +160,8 @@ public class AnomalyService {
             anomaly.setPhoto(fileName);
 
             // Set AnomalyLocation based on longitude and latitude
-            Point anomalyLocation = createPoint(anomalyRequest.getLongitude(), anomalyRequest.getLatitude());
+            Coordinate coordinate = new Coordinate(Double.parseDouble(anomalyRequest.getLongitude()), Double.parseDouble(anomalyRequest.getLatitude()));
+            Point anomalyLocation = geometryFactory.createPoint(coordinate);
             anomaly.setAnomalyLocation(anomalyLocation);
 
             //add connection to train
@@ -197,35 +198,9 @@ public class AnomalyService {
         return null;
     }
 
-    // Method to create a Point based on longitude and latitude
-    private Point createPoint(String longitude, String latitude) {
-        // Parse degrees, minutes, and seconds
-        double parsedLongitude = parseDMS(longitude);
-        double parsedLatitude = parseDMS(latitude);
-        Coordinate coordinate = new Coordinate(parsedLongitude, parsedLatitude);
-        return geometryFactory.createPoint(coordinate);
-    }
-
-    // Method to parse degrees, minutes, and seconds
-    private double parseDMS(String dms) {
-        String[] parts = dms.split("[°'']");
-
-        double degrees = Double.parseDouble(parts[0]);
-        double minutes = Double.parseDouble(parts[1]);
-        double seconds = Double.parseDouble(parts[2]);
-
-        double decimalDegrees = degrees + minutes / 60.0 + seconds / 3600.0;
-
-        // Check if it's west (negative longitude) or south (negative latitude)
-        if (dms.endsWith("W") || dms.endsWith("S")) {
-            decimalDegrees = -decimalDegrees;
-        }
-
-        return decimalDegrees;
-    }
-
     private AnomalyResponse mapToAnomalyResponse(Anomaly anomaly) {
         return AnomalyResponse.builder()
+                .id(anomaly.getId())
                 .location(anomaly.getAnomalyLocation().toString())
                 .timestamp(anomaly.getTimestamp())
                 .photo(anomaly.getPhoto())
@@ -240,6 +215,11 @@ public class AnomalyService {
     public List<AnomalyResponse> getAllAnomalies() {
         List<Anomaly> anomalies = anomalyRepository.findAll();
         return anomalies.stream().map(this::mapToAnomalyResponse).toList();
+    }
+
+    public AnomalyResponse getAnomalyById(Integer id) {
+        Anomaly anomaly = anomalyRepository.findByIdEquals(id);
+        return mapToAnomalyResponse(anomaly);
     }
 
     public List<Object[]> getAllAnomaliesByDate() {

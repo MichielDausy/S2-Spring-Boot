@@ -1,15 +1,9 @@
 package fact.it.springbootapi.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fact.it.springbootapi.dto.AnomalyRequest;
 import fact.it.springbootapi.dto.AnomalyResponse;
-import fact.it.springbootapi.model.Anomaly;
 import fact.it.springbootapi.service.AnomalyService;
 import fact.it.springbootapi.service.FileSystemStorageService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +35,12 @@ public class AnomalyController {
     @ResponseStatus(HttpStatus.OK)
     public List<AnomalyResponse> getAnomalies() {
         return anomalyService.getAllAnomalies();
+    }
+
+    @GetMapping()
+    @ResponseStatus(HttpStatus.OK)
+    public AnomalyResponse getAnomalyById(@RequestParam Integer id) {
+        return anomalyService.getAnomalyById(id);
     }
 
     @GetMapping("/day")

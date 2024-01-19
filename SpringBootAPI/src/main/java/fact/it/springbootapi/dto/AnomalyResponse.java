@@ -15,6 +15,7 @@ import java.util.Date;
 @NoArgsConstructor
 @Builder
 public class AnomalyResponse {
+    private Integer id;
     private OffsetDateTime timestamp;
     private String location;
     private String anomalyType;

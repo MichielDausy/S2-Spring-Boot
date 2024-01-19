@@ -22,4 +22,6 @@ public interface AnomalyRepository extends JpaRepository<Anomaly, Integer> {
             "GROUP BY DATE_TRUNC('second', a.timestamp) " +
             "ORDER BY DATE_TRUNC('second', a.timestamp) ASC")
     List<Object[]> getAnomaliesByDaySQL();
+
+    Anomaly findByIdEquals(Integer id);
 }
