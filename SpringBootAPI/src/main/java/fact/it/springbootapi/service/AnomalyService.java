@@ -175,13 +175,13 @@ public class AnomalyService {
 
             //add connection to traintrack
             //Find TrainTrack based on spatial relationship
-            /*TrainTrack trainTrack = trainTrackRepository.findByTrackGeometryIntersects(anomalyLocation);
+            TrainTrack trainTrack = trainTrackRepository.findByTrackGeometryIntersects(anomalyLocation);
             if (trainTrack != null) {
                 anomaly.setTrainTrack(trainTrack);
             } else {
                 // Handle the case when the anomalyLocation does not intersect with any TrainTrack
-                throw new IllegalArgumentException("Anomaly does not intersect with any TrainTrack");
-            }*/
+                anomaly.setTrainTrack(null);
+            }
             //add connection to country
             // Find Country based on spatial relationship
             Country country = new Country();
@@ -226,14 +226,14 @@ public class AnomalyService {
 
     private AnomalyResponse mapToAnomalyResponse(Anomaly anomaly) {
         return AnomalyResponse.builder()
-                .location(anomaly.getAnomalyLocation())
+                .location(anomaly.getAnomalyLocation().toString())
                 .timestamp(anomaly.getTimestamp())
                 .photo(anomaly.getPhoto())
-                //.anomalyType(anomaly.getAnomalyType() != null ? anomaly.getAnomalyType().getName() : null)
-                //.country(anomaly.getCountry() != null ? anomaly.getCountry().getName() : null)
-                //.sign(anomaly.getSign() != null ? anomaly.getSign().getName() : null)
-                //.train(anomaly.getTrain() != null ? anomaly.getTrain().getName() : null)
-                //.trainTrack(anomaly.getTrainTrack() != null ? anomaly.getTrainTrack().getName() : null)
+                .anomalyType(anomaly.getAnomalyType() != null ? anomaly.getAnomalyType().getName() : null)
+                .country(anomaly.getCountry() != null ? anomaly.getCountry().getName() : null)
+                .sign(anomaly.getSign() != null ? anomaly.getSign().getName() : null)
+                .train(anomaly.getTrain() != null ? anomaly.getTrain().getName() : null)
+                .trainTrack(anomaly.getTrainTrack() != null ? anomaly.getTrainTrack().getName() : null)
                 .build();
     }
 

@@ -26,15 +26,12 @@ public class AnomalyController {
 
     @PostMapping("/new")
     @ResponseStatus(HttpStatus.OK)
-    public AnomalyResponse addAnomaly(@RequestParam("model") String jsonObject, @RequestParam("file") MultipartFile file) {
+    public AnomalyResponse addAnomaly(@ModelAttribute AnomalyRequest data, @RequestParam("file") MultipartFile file) {
         AnomalyResponse response = null;
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
         try {
-            AnomalyRequest data = objectMapper.readValue(jsonObject, AnomalyRequest.class);
             String fileName = fileSystemStorageService.store(file, data.getTimestamp().toString());
             response = anomalyService.addAnomaly(data, fileName);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return response;

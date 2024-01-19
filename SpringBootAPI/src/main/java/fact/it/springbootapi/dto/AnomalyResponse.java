@@ -16,10 +16,11 @@ import java.util.Date;
 @Builder
 public class AnomalyResponse {
     private OffsetDateTime timestamp;
-    private Point location;
+    private String location;
     private String anomalyType;
     private String sign;
     private String train;
     private String country;
+    private String trainTrack;
     private String photo;
 }
