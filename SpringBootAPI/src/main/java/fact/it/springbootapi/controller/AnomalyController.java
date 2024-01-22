@@ -6,6 +6,7 @@ import fact.it.springbootapi.service.AnomalyService;
 import fact.it.springbootapi.service.FileSystemStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,6 +42,13 @@ public class AnomalyController {
     @ResponseStatus(HttpStatus.OK)
     public AnomalyResponse getAnomalyById(@RequestParam Integer id) {
         return anomalyService.getAnomalyById(id);
+    }
+
+    @GetMapping("/map")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<List<String>> getAllAnomaliesOnMap() {
+        List<String> points =  anomalyService.getAllAnomaliesOnMap();
+        return new ResponseEntity<>(points, HttpStatus.OK);
     }
 
     @GetMapping("/day")

@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiLineString;
 
 import java.util.List;
 

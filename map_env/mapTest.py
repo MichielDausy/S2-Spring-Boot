@@ -1,35 +1,41 @@
-import folium
 import requests
+import folium
 from shapely import wkt
+from shapely.geometry import MultiPoint
+import re
 
 # Replace the URL with your actual API endpoint
-api_url = 'http://localhost:8081/api/tracks/map?trackId=1'
+api_url = 'http://localhost:8081/api/anomalies/map'
 
 # Make a GET request to the API endpoint
 response = requests.get(api_url)
 
 # Check if the request was successful (status code 200)
 if response.status_code == 200:
-    # Parse the WKT string into a Shapely geometry object
-    wkt_geometry = response.text.strip()
-    geometry = wkt.loads(wkt_geometry)
+    # Get the list of Points
+    point_wkts = re.findall(r'POINT\(([^)]+)\)', response.text)
 
-    # Extract coordinates from the Shapely geometry object
-    coordinates = list(geometry.coords)
-    print(coordinates)
+    # Convert each WKT to a Shapely Point and add it to a list
+    points = [wkt.loads(f"POINT({point})") for point in point_wkts]
 
-    # Swap the order of coordinates (longitude, latitude) to (latitude, longitude)
-    coordinates = [(coord[1], coord[0]) for coord in coordinates]
-    print(coordinates)
+    # Create a Shapely MultiPoint from the list of Points
+    multipoint = MultiPoint(points)
 
-    # Create a map centered at the first coordinate
-    m = folium.Map(location=[coordinates[0][0], coordinates[0][1]], zoom_start=12)
+    # Calculate the center of the bounding box
+    center_lat = (multipoint.bounds[1] + multipoint.bounds[3]) / 2
+    center_lon = (multipoint.bounds[0] + multipoint.bounds[2]) / 2
 
-    # Add a line to the map with the coordinates
-    folium.PolyLine(coordinates, color="red", weight=2.5, opacity=1).add_to(m)
+    # Create a folium map centered at the bounding box center
+    mymap = folium.Map(location=[center_lat, center_lon], zoom_start=14)
+
+    # Convert Shapely MultiPoint to GeoJSON format
+    multipoint_geojson = folium.GeoJson(data=multipoint.__geo_interface__)
+
+    # Add GeoJSON to the map
+    multipoint_geojson.add_to(mymap)
 
     # Save the map to an HTML file
-    m.save('map.html')
+    mymap.save("map.html")
 else:
     # Print an error message if the request was not successful
     print(f"Error: {response.status_code}")

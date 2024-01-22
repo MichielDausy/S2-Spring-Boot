@@ -6,14 +6,21 @@ import fact.it.springbootapi.model.*;
 import fact.it.springbootapi.repository.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.locationtech.jts.geom.*;
+import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -27,45 +34,38 @@ public class AnomalyService {
     private final TrainTrackRepository trainTrackRepository;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); //4326 is used for longitude and latitude coordinate systems
 
-    private Map<LineString, Point> createRandomLineStringWithPoint() {
-        int numPoints = 50;
-        Coordinate[] coordinates = new Coordinate[numPoints];
+    private List<List<List<Double>>> loadLineStringCoordinatesFromCSV() throws IOException, JSONException {
+        Reader in = new FileReader("lijnsecties.csv");
+        String[] HEADERS = { "Geo Point", "Geo Shape", "Line section id","Railway line to which the section belongs","ID of the operational point at the beginning of the section","Abbreviation BVT of the operational point at the end of the section","ID of the operational point at the end of the section","Abbreviation BVT of the operational point at the beginning of the section","M-coordinate of the beginning of the section","M-coordinate of the end of the section","Installed electrification","Maximum permitted intensity of the electric power that a riding train is allowed to draw","Maximum current intensity that the train is allowed to draw when stationary","Minimum catenary’s height","Number of tracks","c400","c70","p70","p400","Symbolic name of the operational point at the beginning of the section","Symbolic name of the operational point at the end of the section"};
+        List<List<List<Double>>> lineStrings = new ArrayList<>();
 
-        // Start with a random point within Belgium bounds
-        double startX = 2.5 + Math.random() * (6.5 - 2.5);
-        double startY = 49.5 + Math.random() * (51.3 - 49.5);
-        coordinates[0] = new Coordinate(startX, startY);
+        CSVFormat csvFormat = CSVFormat.newFormat(';').builder().setHeader(HEADERS).setSkipHeaderRecord(true).build();
 
-        // Generate subsequent points within a reasonable range from the previous point
-        for (int i = 1; i < numPoints; i++) {
-            double deltaX = -0.1 + Math.random() * 0.2; // Small change in longitude
-            double deltaY = -0.05 + Math.random() * 0.1; // Small change in latitude
+        Iterable<CSVRecord> records = csvFormat.parse(in);
 
-            double newX = coordinates[i - 1].getX() + deltaX;
-            double newY = coordinates[i - 1].getY() + deltaY;
-
-            // Ensure the new coordinates are within Belgium bounds
-            newX = Math.max(2.5, Math.min(6.5, newX));
-            newY = Math.max(49.5, Math.min(51.3, newY));
-
-            coordinates[i] = new Coordinate(newX, newY);
+        for (CSVRecord record : records) {
+            String geoShape = record.get("Geo Shape");
+            // Remove the leading and trailing double quotes and replace "" with "
+            geoShape = geoShape.substring(1, geoShape.length() - 1).replace("\"\"", "\"");
+            JSONObject jsonObject = new JSONObject(geoShape);
+            JSONArray coordinates = jsonObject.getJSONArray("coordinates");
+            List<List<Double>> lineStringCoordinates = new ArrayList<>();
+            for (int i = 0; i < coordinates.length(); i++) {
+                JSONArray coordinate = coordinates.getJSONArray(i);
+                List<Double> point = new ArrayList<>();
+                point.add(coordinate.getDouble(0));
+                point.add(coordinate.getDouble(1));
+                lineStringCoordinates.add(point);
+            }
+            lineStrings.add(lineStringCoordinates);
         }
-        LineString lineString = geometryFactory.createLineString(coordinates);
-
-        // Choose a random point on the LineString
-        double randomFraction = Math.random();
-        Point randomPoint = lineString.getPointN((int) (randomFraction * numPoints));
-
-        // Create a map and store the LineString with its corresponding Point
-        Map<LineString, Point> lineStringWithPointMap = new HashMap<>();
-        lineStringWithPointMap.put(lineString, randomPoint);
-
-        return lineStringWithPointMap;
+        return lineStrings;
     }
 
     @PostConstruct
     public void loadData() {
         int count = 15;
+        List<Point> points = new ArrayList<>();
         if (trainRepository.count() == 0) {
             for (int i = 0; i < count; i++) {
                 Train train = new Train();
@@ -117,7 +117,38 @@ public class AnomalyService {
             signRepository.save(overpass);
         }
 
-        if (anomalyRepository.count() == 0 && trainTrackRepository.count() == 0) {
+        if (trainTrackRepository.count() == 0) {
+            try {
+                // Load LineString coordinates from CSV
+                List<List<List<Double>>> lineStringCoordinatesList = loadLineStringCoordinatesFromCSV();
+
+                int j = 0;
+                for (List<List<Double>> lineStringCoordinates : lineStringCoordinatesList) {
+                    TrainTrack trainTrack = new TrainTrack();
+                    trainTrack.setName("Train_" + Math.random());
+
+                    // Convert the list of coordinates to an array of Coordinate objects
+                    Coordinate[] coordinates = lineStringCoordinates.stream()
+                            .map(point -> new Coordinate(point.get(0), point.get(1)))
+                            .toArray(Coordinate[]::new);
+                    // Create the LineString
+                    LineString lineString = geometryFactory.createLineString(coordinates);
+
+                    // Set the anomaly's point to a point on the LineString
+                    points.add(lineString.getPointN(j % lineString.getNumPoints()));
+
+                    trainTrack.setTrackGeometry(lineString);
+                    trainTrackRepository.save(trainTrack);
+                    j++;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (anomalyRepository.count() == 0) {
             for (int i = 0; i < count; i++) {
                 Anomaly anomaly = new Anomaly();
                 OffsetDateTime currentDateTime = OffsetDateTime.now();
@@ -130,25 +161,11 @@ public class AnomalyService {
                     anomaly.setAnomalyType(anomalyTypeRepository.findByName("Sign"));
                     anomaly.setSign(signRepository.findByName("Overpass"));
                 }
-
-                TrainTrack trainTrack = new TrainTrack();
-                trainTrack.setName("Track_" + i);
-
-                Map<LineString, Point> lineStringWithPointMap = createRandomLineStringWithPoint();
-
-                // Iterate over the map entries
-                for (Map.Entry<LineString, Point> entry : lineStringWithPointMap.entrySet()) {
-                    LineString lineString = entry.getKey();
-                    Point randomPoint = entry.getValue();
-
-                    anomaly.setAnomalyLocation(randomPoint);
-                    trainTrack.setTrackGeometry(lineString);
-
-                    trainTrackRepository.save(trainTrack);
-                    anomaly.setCountry(countryRepository.findByGeometryContains(randomPoint));
-                    anomaly.setTrainTrack(trainTrackRepository.findByTrackGeometryIntersects(randomPoint));
-                    anomalyRepository.save(anomaly);
-                }
+                anomaly.setAnomalyLocation(points.get(i));
+                List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(i));
+                anomaly.setTrainTrack(trainTracks.get(0));
+                anomaly.setCountry(countryRepository.findByGeometryContains(points.get(i)));
+                anomalyRepository.save(anomaly);
             }
         }
     }
@@ -176,9 +193,9 @@ public class AnomalyService {
 
             //add connection to traintrack
             //Find TrainTrack based on spatial relationship
-            TrainTrack trainTrack = trainTrackRepository.findByTrackGeometryIntersects(anomalyLocation);
-            if (trainTrack != null) {
-                anomaly.setTrainTrack(trainTrack);
+            List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(anomalyLocation);
+            if (trainTracks != null) {
+                anomaly.setTrainTrack(trainTracks.get(0));
             } else {
                 // Handle the case when the anomalyLocation does not intersect with any TrainTrack
                 anomaly.setTrainTrack(null);
@@ -215,6 +232,10 @@ public class AnomalyService {
     public List<AnomalyResponse> getAllAnomalies() {
         List<Anomaly> anomalies = anomalyRepository.findAll();
         return anomalies.stream().map(this::mapToAnomalyResponse).toList();
+    }
+
+    public List<String> getAllAnomaliesOnMap() {
+        return anomalyRepository.getAllAnomaliesOnMap();
     }
 
     public AnomalyResponse getAnomalyById(Integer id) {

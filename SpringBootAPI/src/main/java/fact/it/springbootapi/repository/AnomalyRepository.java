@@ -24,4 +24,7 @@ public interface AnomalyRepository extends JpaRepository<Anomaly, Integer> {
     List<Object[]> getAnomaliesByDaySQL();
 
     Anomaly findByIdEquals(Integer id);
+
+    @Query(value = "SELECT ST_ASTEXT(a.anomalyLocation) FROM Anomaly a")
+    List<String> getAllAnomaliesOnMap();
 }
