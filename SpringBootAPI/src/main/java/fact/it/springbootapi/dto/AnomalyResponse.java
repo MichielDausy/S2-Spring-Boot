@@ -17,7 +17,8 @@ import java.util.Date;
 public class AnomalyResponse {
     private Integer id;
     private OffsetDateTime timestamp;
-    private String location;
+    private Double longitude;
+    private Double latitude;
     private String anomalyType;
     private String sign;
     private String train;

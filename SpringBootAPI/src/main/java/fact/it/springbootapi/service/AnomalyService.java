@@ -20,7 +20,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -59,6 +62,41 @@ public class AnomalyService {
             lineStrings.add(lineStringCoordinates);
         }
         return lineStrings;
+    }
+
+    private AnomalyResponse mapToAnomalyResponse(Anomaly anomaly) {
+        String pointString = anomaly.getAnomalyLocation().toString();
+        // Extract coordinates from the POINT string
+        Pattern pattern = Pattern.compile("POINT \\((.*?) (.*?)\\)");
+        Matcher matcher = pattern.matcher(pointString);
+        String longitude = null;
+        String latitude = null;
+        if (matcher.find()) {
+            longitude = matcher.group(1);
+            latitude = matcher.group(2);
+        }
+
+        // Parse longitude and latitude
+        double longitudeDouble = 0;
+        double latitudeDouble = 0;
+        if (longitude != null && latitude != null) {
+            longitudeDouble = Double.parseDouble(longitude.trim());
+            latitudeDouble = Double.parseDouble(latitude.trim());
+        }
+
+        return AnomalyResponse.builder()
+                .id(anomaly.getId())
+                .longitude(longitudeDouble)
+                .latitude(latitudeDouble)
+                .timestamp(anomaly.getTimestamp())
+                .photo(anomaly.getPhoto())
+                .anomalyType(anomaly.getAnomalyType() != null ? anomaly.getAnomalyType().getName() : null)
+                .country(anomaly.getCountry() != null ? anomaly.getCountry().getName() : null)
+                .train(anomaly.getTrain() != null ? anomaly.getTrain().getName() : null)
+                .trainTrack(anomaly.getTrainTrack() != null ? anomaly.getTrainTrack().getName() : null)
+                .isFalse(anomaly.getIsFalse())
+                .isFixed(anomaly.getIsFixed())
+                .build();
     }
 
     @PostConstruct
@@ -193,21 +231,6 @@ public class AnomalyService {
             e.printStackTrace();
         }
         return null;
-    }
-
-    private AnomalyResponse mapToAnomalyResponse(Anomaly anomaly) {
-        return AnomalyResponse.builder()
-                .id(anomaly.getId())
-                .location(anomaly.getAnomalyLocation().toString())
-                .timestamp(anomaly.getTimestamp())
-                .photo(anomaly.getPhoto())
-                .anomalyType(anomaly.getAnomalyType() != null ? anomaly.getAnomalyType().getName() : null)
-                .country(anomaly.getCountry() != null ? anomaly.getCountry().getName() : null)
-                .train(anomaly.getTrain() != null ? anomaly.getTrain().getName() : null)
-                .trainTrack(anomaly.getTrainTrack() != null ? anomaly.getTrainTrack().getName() : null)
-                .isFalse(anomaly.getIsFalse())
-                .isFixed(anomaly.getIsFixed())
-                .build();
     }
 
     public List<AnomalyResponse> getAllAnomalies() {
