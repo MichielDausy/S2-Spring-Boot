@@ -19,11 +19,10 @@ public class AnomalyResponse {
     private OffsetDateTime timestamp;
     private Double longitude;
     private Double latitude;
-    private String anomalyType;
-    private String sign;
-    private String train;
-    private String country;
-    private String trainTrack;
+    private Integer anomalyTypeId;
+    private Integer trainId;
+    private Integer countryId;
+    private Integer trainTrackId;
     private String photo;
     private Boolean isFixed;
     private Boolean isFalse;
