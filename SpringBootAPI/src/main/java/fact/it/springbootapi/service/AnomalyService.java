@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -32,6 +34,7 @@ public class AnomalyService {
     private final SignRepository signRepository;
     private final TrainRepository trainRepository;
     private final TrainTrackRepository trainTrackRepository;
+    private final CountryService countryService;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); //4326 is used for longitude and latitude coordinate systems
 
     private List<List<List<Double>>> loadLineStringCoordinatesFromCSV() throws IOException, JSONException {
@@ -63,8 +66,8 @@ public class AnomalyService {
     }
 
     @PostConstruct
-    public void loadData() {
-        int count = 15;
+    public void loadData() throws IOException, InterruptedException {
+        int count = 100;
         List<Point> points = new ArrayList<>();
         if (trainRepository.count() == 0) {
             for (int i = 0; i < count; i++) {
@@ -193,7 +196,7 @@ public class AnomalyService {
 
             //add connection to traintrack
             //Find TrainTrack based on spatial relationship
-            List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(anomalyLocation);
+            List<TrainTrack> trainTracks = trainTrackRepository.findClosestTrainTrack(anomalyLocation);
             if (trainTracks != null) {
                 anomaly.setTrainTrack(trainTracks.get(0));
             } else {
@@ -201,11 +204,7 @@ public class AnomalyService {
                 anomaly.setTrainTrack(null);
             }
             //add connection to country
-            // Find Country based on spatial relationship
-            Country country = new Country();
-            country.setName("Belgium");
-            countryRepository.save(country);
-            anomaly.setCountry(country);
+            anomaly.setCountry(countryRepository.findByGeometryContains(anomalyLocation));
 
             anomalyRepository.save(anomaly);
             return mapToAnomalyResponse(anomaly);
