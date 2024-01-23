@@ -24,4 +24,6 @@ public class AnomalyResponse {
     private String country;
     private String trainTrack;
     private String photo;
+    private Boolean isFixed;
+    private Boolean isFalse;
 }

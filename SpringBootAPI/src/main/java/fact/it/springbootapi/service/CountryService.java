@@ -2,6 +2,8 @@ package fact.it.springbootapi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fact.it.springbootapi.dto.CountryResponse;
+import fact.it.springbootapi.model.Country;
 import fact.it.springbootapi.repository.CountryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,17 @@ import java.util.List;
 @Transactional
 public class CountryService {
     private final CountryRepository countryRepository;
-        public List<String> getAllBorders() {
-            return countryRepository.getAllBorders();
+
+    private CountryResponse mapToCountryResponse(Country country) {
+        return CountryResponse.builder()
+                .id(country.getId())
+                .name(country.getName())
+                .countryArea(country.getCountryArea().toString())
+                .build();
+    }
+
+        public List<CountryResponse> getAllCountries() {
+            List<Country> countries = countryRepository.findAll();
+            return countries.stream().map(this::mapToCountryResponse).toList();
         }
     }

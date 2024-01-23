@@ -9,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKTReader;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -31,10 +29,8 @@ public class AnomalyService {
     private final AnomalyRepository anomalyRepository;
     private final AnomalyTypeRepository anomalyTypeRepository;
     private final CountryRepository countryRepository;
-    private final SignRepository signRepository;
     private final TrainRepository trainRepository;
     private final TrainTrackRepository trainTrackRepository;
-    private final CountryService countryService;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); //4326 is used for longitude and latitude coordinate systems
 
     private List<List<List<Double>>> loadLineStringCoordinatesFromCSV() throws IOException, JSONException {
@@ -109,17 +105,6 @@ public class AnomalyService {
             anomalyTypeRepository.save(sign);
         }
 
-        if (signRepository.count() == 0) {
-            Sign stop = new Sign();
-            stop.setName("Stop");
-
-            Sign overpass = new Sign();
-            overpass.setName("Overpass");
-
-            signRepository.save(stop);
-            signRepository.save(overpass);
-        }
-
         if (trainTrackRepository.count() == 0) {
             try {
                 // Load LineString coordinates from CSV
@@ -162,7 +147,6 @@ public class AnomalyService {
                     anomaly.setAnomalyType(anomalyTypeRepository.findByName("Vegetation"));
                 } else {
                     anomaly.setAnomalyType(anomalyTypeRepository.findByName("Sign"));
-                    anomaly.setSign(signRepository.findByName("Overpass"));
                 }
                 anomaly.setAnomalyLocation(points.get(i));
                 List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(i));
@@ -187,9 +171,6 @@ public class AnomalyService {
             //add connection to train
             Train train = trainRepository.findByName(anomalyRequest.getTrain());
             anomaly.setTrain(train);
-            //add connection to sign
-            Sign sign = signRepository.findByName(anomalyRequest.getSign());
-            anomaly.setSign(sign);
             //add connection to anomaly type
             AnomalyType anomalyType = anomalyTypeRepository.findByName(anomalyRequest.getAnomalyType());
             anomaly.setAnomalyType(anomalyType);
@@ -222,9 +203,10 @@ public class AnomalyService {
                 .photo(anomaly.getPhoto())
                 .anomalyType(anomaly.getAnomalyType() != null ? anomaly.getAnomalyType().getName() : null)
                 .country(anomaly.getCountry() != null ? anomaly.getCountry().getName() : null)
-                .sign(anomaly.getSign() != null ? anomaly.getSign().getName() : null)
                 .train(anomaly.getTrain() != null ? anomaly.getTrain().getName() : null)
                 .trainTrack(anomaly.getTrainTrack() != null ? anomaly.getTrainTrack().getName() : null)
+                .isFalse(anomaly.getIsFalse())
+                .isFixed(anomaly.getIsFixed())
                 .build();
     }
 
@@ -242,11 +224,15 @@ public class AnomalyService {
         return mapToAnomalyResponse(anomaly);
     }
 
-    public List<Object[]> getAllAnomaliesByDate() {
-        return anomalyRepository.getAnomaliesByDay();
-    }
-
-    public List<Object[]> getAllAnomaliesByDateSQL() {
-        return anomalyRepository.getAnomaliesByDaySQL();
+    public AnomalyResponse markAnomaly(AnomalyRequest anomalyRequest) {
+        Anomaly anomaly = anomalyRepository.findByIdEquals(anomalyRequest.getId());
+        if (anomalyRequest.getIsFixed() != null) {
+            anomaly.setIsFixed(anomalyRequest.getIsFixed());
+        }
+        if (anomalyRequest.getIsFalse() != null) {
+            anomaly.setIsFalse(anomalyRequest.getIsFalse());
+        }
+        anomalyRepository.save(anomaly);
+        return mapToAnomalyResponse(anomaly);
     }
 }

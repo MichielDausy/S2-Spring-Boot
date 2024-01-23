@@ -12,10 +12,12 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AnomalyRequest {
+    private Integer id;
     private OffsetDateTime timestamp;
     private String longitude;
     private String latitude;
     private String anomalyType;
-    private String sign;
     private String train;
+    private Boolean isFixed;
+    private Boolean isFalse;
 }

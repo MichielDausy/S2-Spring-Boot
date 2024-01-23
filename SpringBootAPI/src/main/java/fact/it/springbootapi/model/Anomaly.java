@@ -27,17 +27,14 @@ public class Anomaly {
     @Column(columnDefinition = "geometry(Point,4326)")
     private Point anomalyLocation;
     private String photo;
-    private boolean isFixed;
-    private boolean isFalse;
+    private Boolean isFixed;
+    private Boolean isFalse;
     @ManyToOne
     @JoinColumn(name="trainId")
     private Train train;
     @ManyToOne
     @JoinColumn(name="typeId")
     private AnomalyType anomalyType;
-    @ManyToOne
-    @JoinColumn(name="signId")
-    private Sign sign;
     @ManyToOne
     @JoinColumn(name="countryId")
     private Country country;

@@ -1,5 +1,6 @@
 package fact.it.springbootapi.controller;
 
+import fact.it.springbootapi.dto.TrainTrackResponse;
 import fact.it.springbootapi.service.TrainTrackService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,9 +23,8 @@ public class TrainTrackController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<String>> showAllTracks() {
-        List<String> hexGeometries =  trainTrackService.getAllTracks();
-        return new ResponseEntity<>(hexGeometries, HttpStatus.OK);
+    public List<TrainTrackResponse> getAllTracks() {
+        return trainTrackService.getAllTracks();
     }
 
 }

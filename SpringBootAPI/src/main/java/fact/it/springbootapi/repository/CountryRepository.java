@@ -13,7 +13,4 @@ import java.util.List;
 public interface CountryRepository extends JpaRepository<Country, Integer> {
     @Query("SELECT c FROM Country c WHERE CONTAINS(c.countryArea, :point) = true")
     Country findByGeometryContains(@Param("point") Point point);
-
-    @Query("SELECT ST_ASTEXT(c.countryArea) FROM Country c")
-    List<String> getAllBorders();
 }

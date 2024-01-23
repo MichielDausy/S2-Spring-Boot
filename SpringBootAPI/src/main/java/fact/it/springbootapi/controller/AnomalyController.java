@@ -51,15 +51,9 @@ public class AnomalyController {
         return new ResponseEntity<>(points, HttpStatus.OK);
     }
 
-    @GetMapping("/day")
+    @PutMapping("/mark")
     @ResponseStatus(HttpStatus.OK)
-    public List<Object[]> getAllAnomaliesByDate(){
-        return anomalyService.getAllAnomaliesByDate();
-    }
-
-    @GetMapping("/daySQL")
-    @ResponseStatus(HttpStatus.OK)
-    public List<Object[]> getAllAnomaliesByDateSQL(){
-        return anomalyService.getAllAnomaliesByDateSQL();
+    public AnomalyResponse markAnomaly(@RequestBody AnomalyRequest anomalyRequest){
+        return anomalyService.markAnomaly(anomalyRequest);
     }
 }
