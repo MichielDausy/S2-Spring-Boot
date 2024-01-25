@@ -5,14 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TrainTrackResponse {
-    private Integer id;
-    private String name;
-    private List<CoordinateResponse> trackGeometry;
+public class CoordinateResponse {
+    private Double longitude;
+    private Double latitude;
 }

@@ -57,4 +57,10 @@ public class AnomalyController {
     public AnomalyResponse markAnomaly(@RequestBody AnomalyRequest anomalyRequest){
         return anomalyService.markAnomaly(anomalyRequest);
     }
+
+    @GetMapping("/byTrack")
+    @ResponseStatus(HttpStatus.OK)
+    public List<AnomalyResponse> getAnomaliesByTrack(@RequestParam Integer id) {
+        return anomalyService.getAllAnomaliesByTrainTrack(id);
+    }
 }

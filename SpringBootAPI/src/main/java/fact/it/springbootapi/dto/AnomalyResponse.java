@@ -26,4 +26,5 @@ public class AnomalyResponse {
     private String photo;
     private Boolean isFixed;
     private Boolean isFalse;
+    private Integer count;
 }

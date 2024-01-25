@@ -29,6 +29,7 @@ public class Anomaly {
     private String photo;
     private Boolean isFixed;
     private Boolean isFalse;
+    private Integer count;
     @ManyToOne
     @JoinColumn(name="trainId")
     private Train train;

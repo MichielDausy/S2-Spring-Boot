@@ -19,8 +19,8 @@ public interface TrainTrackRepository extends JpaRepository<TrainTrack, Integer>
     @Query("SELECT tt FROM TrainTrack tt WHERE INTERSECTS(tt.trackGeometry, :point) = true")
     List<TrainTrack> findByTrackGeometryIntersects(@Param("point") Point point);
 
-    @Query("SELECT tt FROM TrainTrack tt ORDER BY DISTANCE(tt.trackGeometry, :point) ASC")
-    List<TrainTrack> findClosestTrainTrack(@Param("point") Point point);
+    @Query("SELECT tt FROM TrainTrack tt ORDER BY DISTANCE(tt.trackGeometry, :point) ASC LIMIT 1")
+    TrainTrack findClosestTrainTrack(@Param("point") Point point);
 
     @Query("SELECT ST_ASTEXT(t.trackGeometry) FROM TrainTrack t")
     List<String> getAllTraintracks();
