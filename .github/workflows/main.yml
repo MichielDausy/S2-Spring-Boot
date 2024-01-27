@@ -16,6 +16,10 @@ jobs:
           java-version: 17
           cache: maven
           distribution: adopt
+
+      - name: Build and Verify Dependencies
+        working-directory: ./SpringBootAPI
+        run: mvn clean verify
       
       - name: Build, test and package project
         working-directory: ./SpringBootAPI
