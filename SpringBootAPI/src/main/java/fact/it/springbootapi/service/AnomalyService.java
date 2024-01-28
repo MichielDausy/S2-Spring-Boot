@@ -9,9 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.locationtech.jts.geom.*;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
-import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +35,7 @@ public class AnomalyService {
     private final TrainTrackRepository trainTrackRepository;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); //4326 is used for longitude and latitude coordinate systems
 
-    private Iterable<CSVRecord> loadFromCSV() throws IOException, JSONException {
+    private Iterable<CSVRecord> loadFromCSV() throws Exception {
         Reader in = new FileReader("/lijnsecties.csv");
         String[] HEADERS = { "Geo Point", "Geo Shape", "Line section id","Railway line to which the section belongs","ID of the operational point at the beginning of the section","Abbreviation BVT of the operational point at the end of the section","ID of the operational point at the end of the section","Abbreviation BVT of the operational point at the beginning of the section","M-coordinate of the beginning of the section","M-coordinate of the end of the section","Installed electrification","Maximum permitted intensity of the electric power that a riding train is allowed to draw","Maximum current intensity that the train is allowed to draw when stationary","Minimum catenary’s height","Number of tracks","c400","c70","p70","p400","Symbolic name of the operational point at the beginning of the section","Symbolic name of the operational point at the end of the section"};
         //List<List<List<Double>>> lineStrings = new ArrayList<>();
@@ -175,10 +174,8 @@ public class AnomalyService {
                     j++;
                 }
                 //List<List<List<Double>>> lineStringCoordinatesList = loadLineStringCoordinatesFromCSV();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
             }
         }
 

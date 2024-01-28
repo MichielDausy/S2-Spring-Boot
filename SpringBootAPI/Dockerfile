@@ -3,8 +3,7 @@ EXPOSE 8081
 
 WORKDIR .
 
-# Copy the JAR file into the image
-COPY target/*.jar app.jar
+ADD target/*.jar app.jar
 
 # Copy the CSV file into the image
 COPY lijnsecties.csv ./lijnsecties.csv
