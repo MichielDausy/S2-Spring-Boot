@@ -89,7 +89,7 @@ public class AnomalyService {
 
     @PostConstruct
     public void loadData() throws IOException, InterruptedException {
-        int count = 1000000;
+        int count = 100000;
         List<Point> points = new ArrayList<>();
         if (trainRepository.count() == 0) {
             for (int i = 0; i < count; i++) {
@@ -198,7 +198,7 @@ public class AnomalyService {
                 anomaly.setAnomalyLocation(points.get(i));
                 List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(i));
                 anomaly.setTrainTrack(trainTracks.get(0));
-                if (j == 1000) {
+                if (j == points.size()) {
                     j = 0;
                 }
                 anomaly.setCountry(countryRepository.findByGeometryContains(points.get(j)));
