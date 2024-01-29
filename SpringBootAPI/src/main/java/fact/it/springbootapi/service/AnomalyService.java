@@ -167,9 +167,6 @@ public class AnomalyService {
                     LineString lineString = geometryFactory.createLineString(trackCoordinates);
 
                     // Set the anomaly's point to a point on the LineString
-                    if(j == 1000) {
-                        j = 0;
-                    }
                     points.add(lineString.getPointN(j % lineString.getNumPoints()));
 
                     trainTrack.setTrackGeometry(lineString);
@@ -200,6 +197,9 @@ public class AnomalyService {
                 anomaly.setAnomalyLocation(points.get(i));
                 List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(i));
                 anomaly.setTrainTrack(trainTracks.get(0));
+                if (i == 1000) {
+                    i = 0;
+                }
                 anomaly.setCountry(countryRepository.findByGeometryContains(points.get(i)));
                 anomalyRepository.save(anomaly);
             }
