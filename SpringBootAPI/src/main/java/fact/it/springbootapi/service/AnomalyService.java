@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -32,9 +33,10 @@ public class AnomalyService {
     private final TrainRepository trainRepository;
     private final TrainTrackRepository trainTrackRepository;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); //4326 is used for longitude and latitude coordinate systems
+    private final String filePath = "./coordinates.txt";
 
     private Iterable<CSVRecord> loadFromCSV() throws Exception {
-        Reader in = new FileReader("/lijnsecties.csv");
+        Reader in = new FileReader("./lijnsecties.csv");
         String[] HEADERS = { "Geo Point", "Geo Shape", "Line section id","Railway line to which the section belongs","ID of the operational point at the beginning of the section","Abbreviation BVT of the operational point at the end of the section","ID of the operational point at the end of the section","Abbreviation BVT of the operational point at the beginning of the section","M-coordinate of the beginning of the section","M-coordinate of the end of the section","Installed electrification","Maximum permitted intensity of the electric power that a riding train is allowed to draw","Maximum current intensity that the train is allowed to draw when stationary","Minimum catenary’s height","Number of tracks","c400","c70","p70","p400","Symbolic name of the operational point at the beginning of the section","Symbolic name of the operational point at the end of the section"};
         //List<List<List<Double>>> lineStrings = new ArrayList<>();
 
@@ -87,7 +89,7 @@ public class AnomalyService {
 
     @PostConstruct
     public void loadData() throws IOException, InterruptedException {
-        int count = 10000;
+        int count = 1000;
         List<Point> points = new ArrayList<>();
         if (trainRepository.count() == 0) {
             for (int i = 0; i < count; i++) {
@@ -101,21 +103,48 @@ public class AnomalyService {
         if (countryRepository.count() == 0) {
             Country country = new Country();
             country.setName("Belgium");
-            // Create a Polygon for Belgium's area (example coordinates)
-            // Example coordinates for a simplified polygon of Belgium
-            Coordinate[] belgiumCoordinates = new Coordinate[]{
-                    new Coordinate(2.5, 49.5),
-                    new Coordinate(6.5, 49.5),
-                    new Coordinate(6.5, 51.3),
-                    new Coordinate(2.5, 51.3),
-                    new Coordinate(2.5, 49.5)
-            };
+            try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+                String line;
+                // Create a list to store polygons
+                List<Polygon> polygons = new ArrayList<>();
 
-            LinearRing linearRing = geometryFactory.createLinearRing(belgiumCoordinates);
-            Polygon belgiumArea = geometryFactory.createPolygon(linearRing, null);
-            country.setCountryArea(belgiumArea);
+                // Iterate through each line in the file
+                while ((line = reader.readLine()) != null) {
+                    // Parse coordinates from the line
+                    // Remove brackets and split the line by comma
+                    String[] pairs = line.replaceAll("[\\[\\](){}]", "").split(", ");
 
-            countryRepository.save(country);
+                    List<Coordinate> coordinates = new ArrayList<>();
+
+                    // Parse each pair and add to the list
+                    for (int i = 0; i < pairs.length; i += 2) {
+                        // Ensure that there are enough elements in the pairs array
+                        if (i + 1 < pairs.length) {
+                            // Extract x and y values from pairs[i] and pairs[i+1]
+                            double x = Double.parseDouble(pairs[i]);
+                            double y = Double.parseDouble(pairs[i + 1]);
+                            coordinates.add(new Coordinate(x, y));
+                        } else {
+                            // Handle the case where there are not enough elements in the pairs array
+                            System.err.println("Invalid pair format: " + line);
+                        }
+                    }
+
+                    // Create a polygon using the GeometryFactory
+                    Coordinate[] coordsArray = coordinates.toArray(new Coordinate[0]);
+                    Polygon polygon = geometryFactory.createPolygon(coordsArray);
+
+                    polygons.add(polygon);
+                }
+                // Set the list of polygons to the country
+                Polygon[] polygonArray = polygons.toArray(new Polygon[0]);
+                country.setCountryArea(geometryFactory.createMultiPolygon(polygonArray));
+
+                // Save the country with its associated polygons
+                countryRepository.save(country);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         if (anomalyTypeRepository.count() == 0) {

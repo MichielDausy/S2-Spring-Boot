@@ -9,8 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
 
 import java.util.List;
 
@@ -26,16 +26,9 @@ public class Country {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String name;
-    @Column(columnDefinition = "geometry(Polygon)")
-    private Polygon countryArea;
+    @Column(columnDefinition = "geometry(MultiPolygon)")
+    private MultiPolygon countryArea;
     @JsonIgnore
     @OneToMany(mappedBy = "country")
     private List<Anomaly> anomalies;
-
-    public boolean isPointInsideCountry(Point point) {
-        if (countryArea != null) {
-            return countryArea.contains(point);
-        }
-        return false;
-    }
 }
