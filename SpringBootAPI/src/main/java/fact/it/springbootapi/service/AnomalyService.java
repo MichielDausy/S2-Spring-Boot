@@ -18,9 +18,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -180,6 +178,7 @@ public class AnomalyService {
         }
 
         if (anomalyRepository.count() == 0) {
+            Random random = new Random();
             int j = 0;
             for (int i = 0; i < count; i++) {
                 Anomaly anomaly = new Anomaly();
@@ -198,11 +197,19 @@ public class AnomalyService {
                 if (j == points.size()-1) {
                     j = 0;
                 }
-                anomaly.setAnomalyLocation(points.get(j));
-                List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(j));
-                anomaly.setTrainTrack(trainTracks.get(0));
-                anomaly.setCountry(countryRepository.findByGeometryContains(points.get(j)));
-                anomalyRepository.save(anomaly);
+                // Get a random point on the train track's LineString
+                Optional<TrainTrack> trainTrack = trainTrackRepository.findById(j);
+                if (trainTrack.isPresent()) {
+                    LineString lineString = trainTrack.get().getTrackGeometry();
+                    int randomIndex = random.nextInt(lineString.getNumPoints());
+                    Point randomPoint = lineString.getPointN(randomIndex);
+                    anomaly.setAnomalyLocation(randomPoint);
+
+                    List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(randomPoint);
+                    anomaly.setTrainTrack(trainTracks.get(0));
+                    anomaly.setCountry(countryRepository.findByGeometryContains(randomPoint));
+                    anomalyRepository.save(anomaly);
+                }
                 j++;
             }
         }
