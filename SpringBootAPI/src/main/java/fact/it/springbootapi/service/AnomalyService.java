@@ -89,7 +89,7 @@ public class AnomalyService {
 
     @PostConstruct
     public void loadData() throws IOException, InterruptedException {
-        int count = 100;
+        int count = 1000000;
         List<Point> points = new ArrayList<>();
         if (trainRepository.count() == 0) {
             for (int i = 0; i < count; i++) {
@@ -167,6 +167,9 @@ public class AnomalyService {
                     LineString lineString = geometryFactory.createLineString(trackCoordinates);
 
                     // Set the anomaly's point to a point on the LineString
+                    if(j == 1000) {
+                        j = 0;
+                    }
                     points.add(lineString.getPointN(j % lineString.getNumPoints()));
 
                     trainTrack.setTrackGeometry(lineString);
