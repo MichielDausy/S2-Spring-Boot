@@ -198,7 +198,7 @@ public class AnomalyService {
                 anomaly.setAnomalyLocation(points.get(i));
                 List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(i));
                 anomaly.setTrainTrack(trainTracks.get(0));
-                if (j == points.size()) {
+                if (j == points.size()-1) {
                     j = 0;
                 }
                 anomaly.setCountry(countryRepository.findByGeometryContains(points.get(j)));
