@@ -195,12 +195,12 @@ public class AnomalyService {
                 } else {
                     anomaly.setAnomalyType(anomalyTypeRepository.findByName("Sign"));
                 }
-                anomaly.setAnomalyLocation(points.get(i));
-                List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(i));
-                anomaly.setTrainTrack(trainTracks.get(0));
                 if (j == points.size()-1) {
                     j = 0;
                 }
+                anomaly.setAnomalyLocation(points.get(j));
+                List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(j));
+                anomaly.setTrainTrack(trainTracks.get(0));
                 anomaly.setCountry(countryRepository.findByGeometryContains(points.get(j)));
                 anomalyRepository.save(anomaly);
                 j++;
