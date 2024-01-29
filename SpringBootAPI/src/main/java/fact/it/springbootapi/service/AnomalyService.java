@@ -89,7 +89,7 @@ public class AnomalyService {
 
     @PostConstruct
     public void loadData() throws IOException, InterruptedException {
-        int count = 10000;
+        int count = 1000000;
         List<Point> points = new ArrayList<>();
         if (trainRepository.count() == 0) {
             for (int i = 0; i < count; i++) {
