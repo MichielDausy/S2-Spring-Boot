@@ -180,6 +180,7 @@ public class AnomalyService {
         }
 
         if (anomalyRepository.count() == 0) {
+            int j = 0;
             for (int i = 0; i < count; i++) {
                 Anomaly anomaly = new Anomaly();
                 OffsetDateTime currentDateTime = OffsetDateTime.now();
@@ -197,11 +198,12 @@ public class AnomalyService {
                 anomaly.setAnomalyLocation(points.get(i));
                 List<TrainTrack> trainTracks = trainTrackRepository.findByTrackGeometryIntersects(points.get(i));
                 anomaly.setTrainTrack(trainTracks.get(0));
-                if (i == 1000) {
-                    i = 0;
+                if (j == 1000) {
+                    j = 0;
                 }
-                anomaly.setCountry(countryRepository.findByGeometryContains(points.get(i)));
+                anomaly.setCountry(countryRepository.findByGeometryContains(points.get(j)));
                 anomalyRepository.save(anomaly);
+                j++;
             }
         }
     }
