@@ -21,7 +21,7 @@ public class AnomalyResponse {
     private Integer trainId;
     private Integer countryId;
     private Integer trainTrackId;
-    private S3ObjectInputStream photo;
+    private byte[] photo;
     private Boolean isFixed;
     private Boolean isFalse;
     private Integer count;

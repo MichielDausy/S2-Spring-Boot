@@ -6,6 +6,7 @@ import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.util.IOUtils;
 import fact.it.springbootapi.dto.AnomalyRequest;
 import fact.it.springbootapi.dto.AnomalyResponse;
 import fact.it.springbootapi.model.*;
@@ -21,10 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -124,12 +122,15 @@ public class AnomalyService {
             latitudeDouble = Double.parseDouble(latitude.trim());
         }
 
+        // Read the image data from the S3ObjectInputStream and convert it to a byte array
+        byte[] imageData = readImageDataFromStream(s3ObjectInputStream);
+
         return AnomalyResponse.builder()
                 .id(anomaly.getId())
                 .longitude(longitudeDouble)
                 .latitude(latitudeDouble)
                 .timestamp(anomaly.getTimestamp())
-                .photo(s3ObjectInputStream)
+                .photo(imageData)
                 .anomalyTypeId(anomaly.getAnomalyType() != null ? anomaly.getAnomalyType().getId() : null)
                 .countryId(anomaly.getCountry() != null ? anomaly.getCountry().getId() : null)
                 .trainId(anomaly.getTrain() != null ? anomaly.getTrain().getId() : null)
@@ -138,6 +139,21 @@ public class AnomalyService {
                 .isFixed(anomaly.getIsFixed())
                 .count(anomaly.getCount())
                 .build();
+    }
+
+    private byte[] readImageDataFromStream(InputStream inputStream) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            // Handle the exception or log it
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @PostConstruct
