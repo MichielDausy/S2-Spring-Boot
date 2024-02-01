@@ -1,5 +1,11 @@
 package fact.it.springbootapi.service;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import fact.it.springbootapi.dto.AnomalyRequest;
 import fact.it.springbootapi.dto.AnomalyResponse;
 import fact.it.springbootapi.model.*;
@@ -11,6 +17,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.locationtech.jts.geom.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +30,13 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -34,6 +48,16 @@ public class AnomalyService {
     private final TrainTrackRepository trainTrackRepository;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); //4326 is used for longitude and latitude coordinate systems
     private final String filePath = "/coordinates.txt";
+
+    private AmazonS3 s3client;
+    @Value("${amazonProperties.bucketName}")
+    private String bucketName;
+    @Value("${amazonProperties.accessKey}")
+    private String accessKey;
+    @Value("${amazonProperties.secretKey}")
+    private String secretKey;
+    @Value("${amazonProperties.sessiontoken}")
+    private String sessiontoken;
 
     private Iterable<CSVRecord> loadFromCSV() throws Exception {
         Reader in = new FileReader("/lijnsecties.csv");
@@ -70,7 +94,6 @@ public class AnomalyService {
                 .longitude(longitudeDouble)
                 .latitude(latitudeDouble)
                 .timestamp(anomaly.getTimestamp())
-                .photo(anomaly.getPhoto())
                 .anomalyTypeId(anomaly.getAnomalyType() != null ? anomaly.getAnomalyType().getId() : null)
                 .countryId(anomaly.getCountry() != null ? anomaly.getCountry().getId() : null)
                 .trainId(anomaly.getTrain() != null ? anomaly.getTrain().getId() : null)
@@ -81,13 +104,48 @@ public class AnomalyService {
                 .build();
     }
 
-    private boolean isSame(Coordinate coord1, Coordinate coord2, double thresholdDistance, String anomalyType1, String anomalyType2) {
-        double distance = coord1.distance(coord2);
-        boolean typeEquals = anomalyType1.equals(anomalyType2);
-        return typeEquals && distance <= thresholdDistance;
+    private AnomalyResponse mapToAnomalyResponse(Anomaly anomaly, S3ObjectInputStream s3ObjectInputStream) {
+        String pointString = anomaly.getAnomalyLocation().toString();
+        // Extract coordinates from the POINT string
+        Pattern pattern = Pattern.compile("POINT \\((.*?) (.*?)\\)");
+        Matcher matcher = pattern.matcher(pointString);
+        String longitude = null;
+        String latitude = null;
+        if (matcher.find()) {
+            longitude = matcher.group(1);
+            latitude = matcher.group(2);
+        }
+
+        // Parse longitude and latitude
+        double longitudeDouble = 0;
+        double latitudeDouble = 0;
+        if (longitude != null && latitude != null) {
+            longitudeDouble = Double.parseDouble(longitude.trim());
+            latitudeDouble = Double.parseDouble(latitude.trim());
+        }
+
+        return AnomalyResponse.builder()
+                .id(anomaly.getId())
+                .longitude(longitudeDouble)
+                .latitude(latitudeDouble)
+                .timestamp(anomaly.getTimestamp())
+                .photo(s3ObjectInputStream)
+                .anomalyTypeId(anomaly.getAnomalyType() != null ? anomaly.getAnomalyType().getId() : null)
+                .countryId(anomaly.getCountry() != null ? anomaly.getCountry().getId() : null)
+                .trainId(anomaly.getTrain() != null ? anomaly.getTrain().getId() : null)
+                .trainTrackId(anomaly.getTrainTrack() != null ? anomaly.getTrainTrack().getId() : null)
+                .isFalse(anomaly.getIsFalse())
+                .isFixed(anomaly.getIsFixed())
+                .count(anomaly.getCount())
+                .build();
     }
 
     @PostConstruct
+    private void initializeAmazon() {
+        AWSCredentials credentials = new BasicSessionCredentials(this.accessKey, this.secretKey, this.sessiontoken);
+        this.s3client = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(credentials)).build();
+    }
+
     public void loadData() throws IOException, InterruptedException {
         int count = 1000;
         List<Point> points = new ArrayList<>();
@@ -244,59 +302,6 @@ public class AnomalyService {
         }
     }
 
-    public AnomalyResponse addAnomaly(AnomalyRequest anomalyRequest, String fileName) {
-        Coordinate coordinate = new Coordinate(Double.parseDouble(anomalyRequest.getLongitude()), Double.parseDouble(anomalyRequest.getLatitude()));
-        Point anomalyPoint = geometryFactory.createPoint(coordinate);
-        Anomaly closestAnomaly = anomalyRepository.findClosestAnomaly(anomalyPoint, anomalyRequest.getAnomalyType());
-
-        // Define a threshold distance
-        double thresholdDistanceMeters = 5.0;
-        double thresholdDistance = thresholdDistanceMeters / 111000;
-        //this means that if an anomaly is within 5 meters from another anomaly then the count is increased of the already existing anomaly and no new anomaly is created because it is very likely the same one.
-
-        if (closestAnomaly != null) {
-            // Check if the closest anomaly is within the threshold distance and that both anomalies have the same anomaly type
-            if (isSame(coordinate, closestAnomaly.getAnomalyLocation().getCoordinate(), thresholdDistance, closestAnomaly.getAnomalyType().getName(), anomalyRequest.getAnomalyType())) {
-                //increment the number of detections of that anomaly
-                int count = closestAnomaly.getCount() + 1;
-                //closestAnomaly.setId(closestAnomaly.getId()); //prevents the creating of a new anomaly
-                closestAnomaly.setCount(count);
-                anomalyRepository.save(closestAnomaly);
-                return mapToAnomalyResponse(closestAnomaly);
-            } else {
-                // create new anomaly
-                Anomaly anomaly = new Anomaly();
-                anomaly.setTimestamp(anomalyRequest.getTimestamp());
-                anomaly.setPhoto(fileName);
-                anomaly.setCount(1);
-                anomaly.setIsFixed(false);
-                anomaly.setIsFalse(false);
-
-                // Set AnomalyLocation based on coordinate
-                Point anomalyLocation = geometryFactory.createPoint(coordinate);
-                anomaly.setAnomalyLocation(anomalyLocation);
-
-                //add connection to train
-                Train train = trainRepository.findByName(anomalyRequest.getTrain());
-                anomaly.setTrain(train);
-                //add connection to anomaly type
-                AnomalyType anomalyType = anomalyTypeRepository.findByName(anomalyRequest.getAnomalyType());
-                anomaly.setAnomalyType(anomalyType);
-
-                //add connection to traintrack
-                //Find TrainTrack based on spatial relationship
-                TrainTrack trainTrack = trainTrackRepository.findClosestTrainTrack(anomalyLocation);
-                anomaly.setTrainTrack(trainTrack);
-                //add connection to country
-                anomaly.setCountry(countryRepository.findByGeometryContains(anomalyLocation));
-
-                anomalyRepository.save(anomaly);
-                return mapToAnomalyResponse(anomaly);
-            }
-        }
-        return null;
-    }
-
     public List<AnomalyResponse> getAllAnomalies() {
         List<Anomaly> anomalies = anomalyRepository.findAll();
         return anomalies.stream().map(this::mapToAnomalyResponse).toList();
@@ -308,7 +313,10 @@ public class AnomalyService {
 
     public AnomalyResponse getAnomalyById(Integer id) {
         Anomaly anomaly = anomalyRepository.findByIdEquals(id);
-        return mapToAnomalyResponse(anomaly);
+        String fileName = anomaly.getPhoto();
+        S3Object s3Object = s3client.getObject(bucketName, fileName);
+        S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();
+        return mapToAnomalyResponse(anomaly, s3ObjectInputStream);
     }
 
     public AnomalyResponse markAnomaly(AnomalyRequest anomalyRequest) {

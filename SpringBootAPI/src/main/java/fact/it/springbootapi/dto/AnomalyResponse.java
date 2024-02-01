@@ -1,14 +1,12 @@
 package fact.it.springbootapi.dto;
 
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.locationtech.jts.geom.Point;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.Date;
 
 @Data
 @AllArgsConstructor
@@ -23,7 +21,7 @@ public class AnomalyResponse {
     private Integer trainId;
     private Integer countryId;
     private Integer trainTrackId;
-    private String photo;
+    private S3ObjectInputStream photo;
     private Boolean isFixed;
     private Boolean isFalse;
     private Integer count;
